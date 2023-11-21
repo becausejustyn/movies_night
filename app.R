@@ -5,33 +5,51 @@ library(dplyr)
 # Define UI
 ui <- fluidPage(
   titlePanel("Movie Order App"),
-  sidebarLayout(
-    sidebarPanel(
-      numericInput("seed", "Enter Seed:", value = 1, min = 1, max = 100000),
-      p("Seed is to specify the RNG."),
-      textInput("item1", "Name 1:", ""),
-      textInput("item2", "Name 2:", ""),
-      textInput("item3", "Name 3:", ""),
-      p("Name of the people selecting movies."),
-      numericInput("numSamples", "Number of Samples:", value = 1000, min = 1),
-      actionButton("sampleBtn", "Sample"),
-      checkboxInput("equallyLikelyCheckbox", "Equally Likely Probabilities", FALSE),
-      h4("Movie Selector"),
-      numericInput("movieSeed", "Enter Movie Seed:", value = 1, min = 1, max = 100000),
-      numericInput("movieNumSamples", "Number of Movie Samples:", value = 1, min = 1),
-      textInput("movie1", "Movie 1:", ""),
-      numericInput("prob1", "Probability 1:", value = 1, min = 0, max = 1, step = 0.1),
-      textInput("movie2", "Movie 2:", ""),
-      numericInput("prob2", "Probability 2:", value = 1, min = 0, max = 1, step = 0.1),
-      textInput("movie3", "Movie 3:", ""),
-      numericInput("prob3", "Probability 3:", value = 1, min = 0, max = 1, step = 0.1),
-      actionButton("movieBtn", "Select Movie")
+  # Use tabsetPanel to create tabs
+  tabsetPanel(
+    # First tab
+    tabPanel(
+      "Movie Selection",
+      sidebarLayout(
+        sidebarPanel(
+          numericInput("seed", "Enter Seed:", value = 1, min = 1, max = 100000),
+          p("Seed is to specify the RNG."),
+          textInput("item1", "Name 1:", ""),
+          textInput("item2", "Name 2:", ""),
+          textInput("item3", "Name 3:", ""),
+          p("Name of the people selecting movies."),
+          numericInput("numSamples", "Number of Samples:", value = 1000, min = 1),
+          actionButton("sampleBtn", "Sample")
+        ),
+        mainPanel(
+          h4("Order of Selector"),
+          tableOutput("resultTable"),
+          h4("Selected Movie:"),
+          tableOutput("selectedMovie")
+        )
+      )
     ),
-    mainPanel(
-      h4("Order of Selector"),
-      tableOutput("resultTable"),
-      h4("Selected Movie:"),
-      tableOutput("selectedMovie")
+    # Second tab
+    tabPanel(
+      "Movie Selector",
+      sidebarLayout(
+        sidebarPanel(
+          checkboxInput("equallyLikelyCheckbox", "Equally Likely Probabilities", FALSE),
+          numericInput("movieSeed", "Enter Movie Seed:", value = 1, min = 1, max = 100000),
+          numericInput("movieNumSamples", "Number of Movie Samples:", value = 1, min = 1),
+          textInput("movie1", "Movie 1:", ""),
+          numericInput("prob1", "Probability 1:", value = .5, min = 0, max = 1, step = 0.05),
+          textInput("movie2", "Movie 2:", ""),
+          numericInput("prob2", "Probability 2:", value = .25, min = 0, max = 1, step = 0.05),
+          textInput("movie3", "Movie 3:", ""),
+          numericInput("prob3", "Probability 3:", value = .25, min = 0, max = 1, step = 0.05),
+          actionButton("movieBtn", "Select Movie")
+        ),
+        mainPanel(
+          h4("Selected Movie:"),
+          tableOutput("selectedMovieMovieTab")
+        )
+      )
     )
   )
 )
@@ -58,6 +76,7 @@ server <- function(input, output) {
       dplyr::mutate(Order = dplyr::row_number())
     
     output$resultTable <- renderTable(sample_count)
+    output$selectedMovie <- renderTable(NULL)  # Clear the selected movie table in the first tab
   })
   
   observeEvent(input$movieBtn, {
@@ -82,14 +101,15 @@ server <- function(input, output) {
     colnames(movie_count) <- "Count"
     
     movie_count <- movie_count |>
-      count(Count) |>
+      dplyr::count(Count) |>
       dplyr::arrange(desc(n)) |>
       dplyr::mutate(Order = dplyr::row_number())
     
     # Display selected movie
-    output$selectedMovie <- renderTable(movie_count)
+    output$selectedMovieMovieTab <- shiny::renderTable(movie_count)
+    output$resultTable <- shiny::renderTable(NULL)  # Clear the result table in the first tab
   })
 }
 
 # Run the application
-shinyApp(ui, server)
+shiny::shinyApp(ui, server)
