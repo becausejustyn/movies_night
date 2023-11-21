@@ -24,9 +24,7 @@ ui <- shiny::fluidPage(
         ),
         shiny::mainPanel(
           h4("Order of Selector"),
-          shiny::tableOutput("resultTable"),
-          #h4("Selected Movie:"),
-          #tableOutput("selectedMovie")
+          shiny::tableOutput("resultTable")
         )
       )
     ),
@@ -36,8 +34,8 @@ ui <- shiny::fluidPage(
       shiny::sidebarLayout(
         shiny::sidebarPanel(
           shiny::checkboxInput("equallyLikelyCheckbox", "Equally Likely Probabilities", FALSE),
-          shiny::numericInput("movieSeed", "Enter Movie Seed:", value = 1, min = 1, max = 100000),
-          shiny::numericInput("movienum_samples", "Number of Movie Samples:", value = 1, min = 1),
+          shiny::numericInput("movie_seed", "Enter Movie Seed:", value = 1, min = 1, max = 100000),
+          shiny::numericInput("movie_n_samples", "Number of Movie Samples:", value = 1, min = 1),
           shiny::textInput("movie1", "Movie 1:", ""),
           shiny::numericInput("prob1", "Probability 1:", value = .5, min = 0, max = 1, step = 0.05),
           shiny::textInput("movie2", "Movie 2:", ""),
@@ -52,6 +50,10 @@ ui <- shiny::fluidPage(
           shiny::tableOutput("selectedMovie")
         )
       )
+    ),
+    shiny::tabPanel( # here
+      "Additional Info",
+      shiny::verbatimTextOutput("additionalInfo")
     )
   ), theme = shinythemes::shinytheme("yeti")
 )
@@ -83,7 +85,7 @@ server <- function(input, output) {
   
   observeEvent(input$movieBtn, {
     # Set seed for reproducibility
-    base::set.seed(input$movieSeed)
+    base::set.seed(input$movie_seed)
     
     # Store movies and probabilities in a data frame
     movies <- base::data.frame(
@@ -92,9 +94,9 @@ server <- function(input, output) {
     )
     
     if (input$equallyLikelyCheckbox) {
-      selected_movie <- base::sample(movies$movie, input$movienum_samples, replace = TRUE)
+      selected_movie <- base::sample(movies$movie, input$movie_n_samples, replace = TRUE)
     } else {
-      selected_movie <- base::sample(movies$movie, input$movienum_samples, replace = TRUE, prob = movies$prob)
+      selected_movie <- base::sample(movies$movie, input$movie_n_samples, replace = TRUE, prob = movies$prob)
     }
     
     movie_count <- selected_movie |>
@@ -111,6 +113,12 @@ server <- function(input, output) {
     output$selectedMovieMovieTab <- shiny::renderTable(movie_count)
     output$resultTable <- shiny::renderTable(NULL)  # Clear the result table in the first tab
   })
+  
+  # Render additional text in the third tab
+  output$additionalInfo <- shiny::renderText({
+    "This app is simply a RNG helper for selecting movies. It is not meant to help you solve your indecisiveness in life."
+  })
+
 }
 
 # Run the application
