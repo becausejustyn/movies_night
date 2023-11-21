@@ -1,104 +1,106 @@
 # Install and load necessary packages if not already installed
 if (!require(shiny)) install.packages("shiny", dependencies = TRUE)
 library(dplyr)
+library(shinythemes)
 
 # Define UI
-ui <- fluidPage(
-  titlePanel("Movie Order App"),
+ui <- shiny::fluidPage(
+  shiny::titlePanel("Movie Order App"),
   # Use tabsetPanel to create tabs
-  tabsetPanel(
+  shiny::tabsetPanel(
     # First tab
-    tabPanel(
+    shiny::tabPanel(
       "Movie Selection",
-      sidebarLayout(
-        sidebarPanel(
-          numericInput("seed", "Enter Seed:", value = 1, min = 1, max = 100000),
+      shiny::sidebarLayout(
+        shiny::sidebarPanel(
+          shiny::numericInput("seed", "Enter Seed:", value = 1, min = 1, max = 100000),
           p("Seed is to specify the RNG."),
-          textInput("item1", "Name 1:", ""),
-          textInput("item2", "Name 2:", ""),
-          textInput("item3", "Name 3:", ""),
+          shiny::textInput("item1", "Name 1:", ""),
+          shiny::textInput("item2", "Name 2:", ""),
+          shiny::textInput("item3", "Name 3:", ""),
           p("Name of the people selecting movies."),
-          numericInput("numSamples", "Number of Samples:", value = 1000, min = 1),
-          actionButton("sampleBtn", "Sample")
+          shiny::numericInput("num_samples", "Number of Samples:", value = 1000, min = 1),
+          shiny::actionButton("sampleBtn", "Sample")
         ),
-        mainPanel(
+        shiny::mainPanel(
           h4("Order of Selector"),
-          tableOutput("resultTable"),
-          h4("Selected Movie:"),
-          tableOutput("selectedMovie")
+          shiny::tableOutput("resultTable"),
+          #h4("Selected Movie:"),
+          #tableOutput("selectedMovie")
         )
       )
     ),
     # Second tab
-    tabPanel(
+    shiny::tabPanel(
       "Movie Selector",
-      sidebarLayout(
-        sidebarPanel(
-          checkboxInput("equallyLikelyCheckbox", "Equally Likely Probabilities", FALSE),
-          numericInput("movieSeed", "Enter Movie Seed:", value = 1, min = 1, max = 100000),
-          numericInput("movieNumSamples", "Number of Movie Samples:", value = 1, min = 1),
-          textInput("movie1", "Movie 1:", ""),
-          numericInput("prob1", "Probability 1:", value = .5, min = 0, max = 1, step = 0.05),
-          textInput("movie2", "Movie 2:", ""),
-          numericInput("prob2", "Probability 2:", value = .25, min = 0, max = 1, step = 0.05),
-          textInput("movie3", "Movie 3:", ""),
-          numericInput("prob3", "Probability 3:", value = .25, min = 0, max = 1, step = 0.05),
-          actionButton("movieBtn", "Select Movie")
+      shiny::sidebarLayout(
+        shiny::sidebarPanel(
+          shiny::checkboxInput("equallyLikelyCheckbox", "Equally Likely Probabilities", FALSE),
+          shiny::numericInput("movieSeed", "Enter Movie Seed:", value = 1, min = 1, max = 100000),
+          shiny::numericInput("movienum_samples", "Number of Movie Samples:", value = 1, min = 1),
+          shiny::textInput("movie1", "Movie 1:", ""),
+          shiny::numericInput("prob1", "Probability 1:", value = .5, min = 0, max = 1, step = 0.05),
+          shiny::textInput("movie2", "Movie 2:", ""),
+          shiny::numericInput("prob2", "Probability 2:", value = .25, min = 0, max = 1, step = 0.05),
+          shiny::textInput("movie3", "Movie 3:", ""),
+          shiny::numericInput("prob3", "Probability 3:", value = .25, min = 0, max = 1, step = 0.05),
+          shiny::actionButton("movieBtn", "Select Movie")
         ),
-        mainPanel(
+        shiny::mainPanel(
           h4("Selected Movie:"),
-          tableOutput("selectedMovieMovieTab")
+          shiny::tableOutput("selectedMovieMovieTab"),
+          shiny::tableOutput("selectedMovie")
         )
       )
     )
-  )
+  ), theme = shinythemes::shinytheme("yeti")
 )
 
 # Define server logic
 server <- function(input, output) {
-  observeEvent(input$sampleBtn, {
+  shiny::observeEvent(input$sampleBtn, {
     # Set seed for reproducibility
-    set.seed(input$seed)
+    base::set.seed(input$seed)
     
     # Store items in a vector
     items <- c(input$item1, input$item2, input$item3)
     
     # Sample items based on the specified number of samples
-    samples <- sample(items, size = input$numSamples, replace = TRUE) |>
-      as.data.frame() 
+    samples <- base::sample(items, size = input$num_samples, replace = TRUE) |>
+      base::as.data.frame() 
     
     # Rename column
-    colnames(samples) <- "Count"
+    base::colnames(samples) <- "Count"
     
     sample_count <- samples |>
-      count(Count) |>
+      dplyr::count(Count) |>
       dplyr::arrange(desc(n)) |>
       dplyr::mutate(Order = dplyr::row_number())
     
-    output$resultTable <- renderTable(sample_count)
-    output$selectedMovie <- renderTable(NULL)  # Clear the selected movie table in the first tab
+    output$resultTable <- shiny::renderTable(sample_count)
+    output$selectedMovie <- shiny::renderTable(NULL)  # Clear the selected movie table in the first tab
   })
   
   observeEvent(input$movieBtn, {
     # Set seed for reproducibility
-    set.seed(input$movieSeed)
+    base::set.seed(input$movieSeed)
     
     # Store movies and probabilities in a data frame
-    movies <- data.frame(
+    movies <- base::data.frame(
       movie = c(input$movie1, input$movie2, input$movie3),
       prob = c(input$prob1, input$prob2, input$prob3)
     )
     
     if (input$equallyLikelyCheckbox) {
-      selected_movie <- sample(movies$movie, input$movieNumSamples, replace = TRUE)
+      selected_movie <- base::sample(movies$movie, input$movienum_samples, replace = TRUE)
     } else {
-      selected_movie <- sample(movies$movie, input$movieNumSamples, replace = TRUE, prob = movies$prob)
+      selected_movie <- base::sample(movies$movie, input$movienum_samples, replace = TRUE, prob = movies$prob)
     }
     
     movie_count <- selected_movie |>
-      as.data.frame() 
+      base::as.data.frame() 
     
-    colnames(movie_count) <- "Count"
+    base::colnames(movie_count) <- "Count"
     
     movie_count <- movie_count |>
       dplyr::count(Count) |>
